@@ -1,0 +1,1 @@
+pipenv run python -m PyInstaller .\main.py --onefile --name diff_generator
