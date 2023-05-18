@@ -3,6 +3,7 @@ from os import path
 import os
 from tkinter import *
 from tkinter.messagebox import showerror, showinfo, showwarning
+from tkinter.filedialog import askdirectory
 
 
 class App:
@@ -24,35 +25,68 @@ class App:
         self.main_window.destroy()
 
     def init_gui(self):
-        self.label_git_repo = Label(self.main_window)
-        self.label_git_repo.config(text="git repo path")
-        self.label_git_repo.pack()
+        # row 1
+        label_git_repo = Label(self.main_window)
+        label_git_repo.config(text="Git repo path: ")
+        label_git_repo.grid(row=1, column=1, sticky="E")
         self.text_box_git_repo = Entry(self.main_window)
-        self.text_box_git_repo.pack()
+        self.text_box_git_repo.config(width=50)
+        self.text_box_git_repo.grid(row=1, column=2)
+        browse_repo_button = Button(self.main_window)
+        browse_repo_button.config(text="Browse...")
+        browse_repo_button.config(width=10)
+        browse_repo_button.config(
+            command=lambda: self.fill_folder_path(self.text_box_git_repo)
+        )
+        browse_repo_button.grid(row=1, column=3)
 
-        self.label_output_dir = Label(self.main_window)
-        self.label_output_dir.config(text="output dir")
-        self.label_output_dir.pack()
+        # row 2
+        label_output_dir = Label(self.main_window)
+        label_output_dir.config(text="Output dir: ")
+        label_output_dir.grid(row=2, column=1, sticky="E")
         self.text_box_output_dir = Entry(self.main_window)
-        self.text_box_output_dir.pack()
+        self.text_box_output_dir.config(width=50)
+        self.text_box_output_dir.grid(row=2, column=2)
+        browse_output_dir_button = Button(self.main_window)
+        browse_output_dir_button.config(text="Browse...")
+        browse_output_dir_button.config(width=10)
+        browse_output_dir_button.config(
+            command=lambda: self.fill_folder_path(self.text_box_output_dir)
+        )
+        browse_output_dir_button.grid(row=2, column=3)
 
-        self.label_ref1 = Label(self.main_window)
-        self.label_ref1.config(text="git ref1 - updated version")
-        self.label_ref1.pack()
+        # row 3
+        label_ref1 = Label(self.main_window)
+        label_ref1.grid(row=3, column=1, sticky="E")
+        label_ref1.config(
+            text="Git ref1 - updated version (branch, tag, commit hash): "
+        )
         self.text_box_ref1 = Entry(self.main_window)
-        self.text_box_ref1.pack()
+        self.text_box_ref1.config(width=50)
+        self.text_box_ref1.grid(row=3, column=2)
 
-        self.label_ref2 = Label(self.main_window)
-        self.label_ref2.config(text="git ref2 - original version")
-        self.label_ref2.pack()
+        # row 4
+        label_ref2 = Label(self.main_window)
+        label_ref2.grid(row=4, column=1, sticky="E")
+        label_ref2.config(
+            text="Git ref2 - original version (branch, tag, commit hash): "
+        )
         self.text_box_ref2 = Entry(self.main_window)
-        self.text_box_ref2.pack()
+        self.text_box_ref2.config(width=50)
+        self.text_box_ref2.grid(row=4, column=2)
 
-        button = Button(self.main_window)
-        button.config(text="GENERATE DIFF")
-        button.config(width=60)
-        button.config(command=self.proceed_command)
-        button.pack()
+        # row 5
+        generate_button = Button(self.main_window)
+        generate_button.config(text="GENERATE DIFF")
+        generate_button.config(width=60)
+        generate_button.config(command=self.proceed_command)
+        generate_button.grid(row=5, column=1, columnspan=3)
+
+    def fill_folder_path(self, entry_to_fill):
+        dir_path = askdirectory(title="Select folder")
+        if dir_path:
+            entry_to_fill.delete(0, END)
+            entry_to_fill.insert(0, dir_path)
 
     def proceed_command(self):
         try:
