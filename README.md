@@ -2,7 +2,7 @@
 
 Simple python app with GUI based on tkinter library that generates folder structure containing original and updated files based on provided git references.
 
-![Screenshot2023-05-18.png](Screenshot2023-05-18.png)
+![Screenshot2023-05-18.png](Screenshot-main.png)
 
 **User has to provide inputs:**
 1. git root repo path
