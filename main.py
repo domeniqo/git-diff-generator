@@ -4,6 +4,7 @@ import os
 from tkinter import *
 from tkinter.messagebox import showerror, showinfo, showwarning
 from tkinter.filedialog import askdirectory
+import re
 
 
 class App:
@@ -76,11 +77,28 @@ class App:
         self.text_box_ref2.grid(row=4, column=2)
 
         # row 5
+        label_regex = Label(self.main_window)
+        label_regex.grid(row=5, column=1, sticky="E")
+        label_regex.config(text="Regex to filter out files (match==include): ")
+        self.text_box_regex = Entry(self.main_window)
+        self.text_box_regex.config(width=50)
+        self.text_box_regex.grid(row=5, column=2)
+        self.var1 = BooleanVar()
+        self.ignore_case = Checkbutton(
+            self.main_window,
+            text="Ignore case",
+            variable=self.var1,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.ignore_case.grid(row=5, column=3, sticky="W")
+
+        # row 6
         generate_button = Button(self.main_window)
         generate_button.config(text="GENERATE DIFF")
         generate_button.config(width=60)
         generate_button.config(command=self.proceed_command)
-        generate_button.grid(row=5, column=1, columnspan=3)
+        generate_button.grid(row=6, column=1, columnspan=3)
 
     def fill_folder_path(self, entry_to_fill):
         dir_path = askdirectory(title="Select folder")
@@ -94,6 +112,18 @@ class App:
             output_root_dir = self.text_box_output_dir.get()
             ref1 = self.text_box_ref1.get()
             ref2 = self.text_box_ref2.get()
+            regex = self.text_box_regex.get()
+            if regex != "":
+                try:
+                    re.compile(regex)
+                except re.error:
+                    showwarning(
+                        title="WARNING",
+                        message="Not a valid regex. Searching for all files",
+                    )
+                    regex = ".*"
+            else:
+                regex = ".*"
 
             updated_files = path.join(output_root_dir, "updated-" + ref1)
             original_files = path.join(output_root_dir, "original-" + ref2)
@@ -105,22 +135,41 @@ class App:
             renamed_files = list(full_diff.iter_change_type("R"))
             deleted_files = list(full_diff.iter_change_type("D"))
 
-            for diff_object in (
-                added_files + modified_files + renamed_files + deleted_files
-            ):
-                if diff_object.a_blob:
+            full_list = added_files + modified_files + renamed_files + deleted_files
+            expected_count = (
+                len(added_files)
+                + len(deleted_files)
+                + 2 * len(renamed_files)
+                + 2 * len(modified_files)
+            )
+            counter = 0
+            for diff_object in full_list:
+                if diff_object.a_blob and re.match(
+                    pattern=regex,
+                    string=diff_object.a_path,
+                    flags=re.IGNORECASE if self.var1.get() else 0,
+                ):
                     final_path = path.abspath(
                         path.join(original_files, diff_object.a_path)
                     )
                     os.makedirs(path.dirname(final_path), exist_ok=True)
                     diff_object.a_blob.stream_data(open(final_path, "wb"))
-                if diff_object.b_blob:
+                    counter += 1
+                if diff_object.b_blob and re.match(
+                    pattern=regex,
+                    string=diff_object.b_path,
+                    flags=re.IGNORECASE if self.var1.get() else 0,
+                ):
                     final_path = path.abspath(
-                        path.join(updated_files, diff_object.a_path)
+                        path.join(updated_files, diff_object.b_path)
                     )
                     os.makedirs(path.dirname(final_path), exist_ok=True)
                     diff_object.b_blob.stream_data(open(final_path, "wb"))
-            showinfo(title="SUCCESS", message="Task finished successfully")
+                    counter += 1
+            showinfo(
+                title="SUCCESS",
+                message=f"Task finished successfully.\n{counter}/{expected_count}",
+            )
         except:
             showerror(title="ERROR", message="Task failed successfully")
 
