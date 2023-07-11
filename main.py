@@ -125,8 +125,14 @@ class App:
             else:
                 regex = ".*"
 
-            updated_files = path.join(output_root_dir, "updated-" + ref1)
-            original_files = path.join(output_root_dir, "original-" + ref2)
+            updated_files = path.join(
+                output_root_dir,
+                "updated-" + ref1.replace(os.sep, "_").replace("/", "_"),
+            )
+            original_files = path.join(
+                output_root_dir,
+                "original-" + ref2.replace(os.sep, "_").replace("/", "_"),
+            )
 
             repo = git.Repo(repo_path)
             full_diff = repo.commit(ref2).diff(ref1)
