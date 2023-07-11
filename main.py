@@ -134,8 +134,22 @@ class App:
                 "original-" + ref2.replace(os.sep, "_").replace("/", "_"),
             )
 
-            repo = git.Repo(repo_path)
-            full_diff = repo.commit(ref2).diff(ref1)
+            try:
+                repo = git.Repo(repo_path)
+            except git.InvalidGitRepositoryError:
+                showerror(
+                    title="Invalid repo",
+                    message="Provided git repo path is not a valid git repository.",
+                )
+                raise
+            try:
+                full_diff = repo.commit(ref2).diff(ref1)
+            except git.BadName:
+                showerror(
+                    title="Invalid reference",
+                    message="Provided references do not exist in git repo.",
+                )
+                raise
             added_files = list(full_diff.iter_change_type("A"))
             modified_files = list(full_diff.iter_change_type("M"))
             renamed_files = list(full_diff.iter_change_type("R"))
@@ -176,8 +190,20 @@ class App:
                 title="SUCCESS",
                 message=f"Task finished successfully.\n{counter}/{expected_count}",
             )
-        except:
-            showerror(title="ERROR", message="Task failed successfully")
+        except Exception as e:
+            if not any(
+                [
+                    isinstance(e, handled_exception)
+                    for handled_exception in [
+                        git.InvalidGitRepositoryError,
+                        git.BadName,
+                    ]
+                ]
+            ):
+                showerror(
+                    title="ERROR",
+                    message="Task failed successfully for unhandled reason.",
+                )
 
 
 if __name__ == "__main__":
