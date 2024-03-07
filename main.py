@@ -95,10 +95,17 @@ class App:
 
         # row 6
         generate_button = Button(self.main_window)
-        generate_button.config(text="GENERATE DIFF")
+        generate_button.config(text="GENERATE REFS DIFF")
         generate_button.config(width=60)
-        generate_button.config(command=self.proceed_command)
+        generate_button.config(command=self.generate_refs_diff)
         generate_button.grid(row=6, column=1, columnspan=3)
+        
+        # row 7
+        generate_button2 = Button(self.main_window)
+        generate_button2.config(text="GENERATE MERGE DIFF")
+        generate_button2.config(width=60)
+        generate_button2.config(command=self.generate_merge_diff)
+        generate_button2.grid(row=7, column=1, columnspan=3)
 
     def fill_folder_path(self, entry_to_fill):
         dir_path = askdirectory(title="Select folder")
@@ -106,7 +113,7 @@ class App:
             entry_to_fill.delete(0, END)
             entry_to_fill.insert(0, dir_path)
 
-    def proceed_command(self):
+    def generate_refs_diff(self):
         try:
             repo_path = self.text_box_git_repo.get()
             output_root_dir = self.text_box_output_dir.get()
@@ -205,6 +212,70 @@ class App:
                     message="Task failed successfully for unhandled reason.",
                 )
 
+    def generate_merge_diff(self):
+        try:
+            repo_path = self.text_box_git_repo.get()
+            output_root_dir = self.text_box_output_dir.get()
+            try:
+                repo = git.Repo(repo_path)
+            except git.InvalidGitRepositoryError:
+                showerror(
+                    title="Invalid repo",
+                    message="Provided git repo path is not a valid git repository.",
+                )
+                raise
+            
+            conflicted_files = repo.index.unmerged_blobs()
+            if len(conflicted_files) > 0:
+                os.makedirs(output_root_dir, exist_ok=True)
+            for file_path in conflicted_files:
+                try:
+                    # Get the base file version (closest common parent for this file)
+                    base_blob = conflicted_files[file_path][0][1]
+                    final_path = os.path.join(output_root_dir, 'base', os.path.normpath(file_path))
+                    os.makedirs(path.dirname(final_path), exist_ok=True)
+                    base_blob.stream_data(open(final_path, "wb"))
+                except Exception as e:
+                    #print(f"can't locate file {file_path} in base versions")
+                    #log the error
+                    pass
+                
+                try:
+                    # Get the file version from HEAD (your current repository state)
+                    head_blob = conflicted_files[file_path][1][1]
+                    final_path = os.path.join(output_root_dir, 'head', os.path.normpath(file_path))
+                    os.makedirs(path.dirname(final_path), exist_ok=True)
+                    head_blob.stream_data(open(final_path, "wb"))
+                except:
+                    #print(f"can't locate file {file_path} in head versions")
+                    #log the error
+                    pass
+                
+                try:
+                    # Get the file version from MERGE_HEAD (what you are merging)
+                    merge_head_blob = conflicted_files[file_path][2][1]
+                    final_path = os.path.join(output_root_dir, 'merge_head', os.path.normpath(file_path))
+                    os.makedirs(path.dirname(final_path), exist_ok=True)
+                    merge_head_blob.stream_data(open(final_path, "wb"))
+                except:
+                    #print(f"can't locate file {file_path} in merge_head versions")
+                    #log the error
+                    pass
+
+        except Exception as e:
+            if not any(
+                [
+                    isinstance(e, handled_exception)
+                    for handled_exception in [
+                        git.InvalidGitRepositoryError,
+                        git.BadName,
+                    ]
+                ]
+            ):
+                showerror(
+                    title="ERROR",
+                    message="Task failed successfully for unhandled reason.",
+                )
 
 if __name__ == "__main__":
     app = App()
