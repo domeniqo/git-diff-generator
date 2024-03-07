@@ -23,3 +23,11 @@ Simple python app with GUI based on tkinter library that generates folder struct
 
 ### Added
 - single function for generating diff between two given references
+
+## v2
+
+### Added
+- function for generating merge diff (3-way merge) (GENERATE MERGE DIFF button); resulting folder structure creates 3 folders:
+    - Base - common ancestor, 
+    - Head - current version of file, 
+    - Merge_head - version of file from reference you are merging
