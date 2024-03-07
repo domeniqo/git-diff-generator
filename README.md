@@ -16,3 +16,10 @@ Simple python app with GUI based on tkinter library that generates folder struct
 # Developer guide
 1. pipenv update (creates virtual environment, install packages)
 2. run deploy_application.bat to generate EXE file in "dist" subfolder
+
+# Changelog
+
+## v1
+
+### Added
+- single function for generating diff between two given references
