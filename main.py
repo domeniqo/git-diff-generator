@@ -246,11 +246,11 @@ class App:
                     elif key == 3:
                         location = "merge_head"
                     final_path = os.path.join(output_root_dir, location, os.path.normpath(file_path))
+                    list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
+                    os.makedirs(path.dirname(final_path), exist_ok=True)
                     try:
-                        os.makedirs(path.dirname(final_path), exist_ok=True)
                         blob = ref_blob_dict[key]
                         blob.stream_data(open(final_path, "wb"))
-                        list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
                     except:
                         #log the error if needed (file/blob is not present in revision with current key)
                         if generate_empty_file:
