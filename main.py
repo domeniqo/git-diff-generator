@@ -2,7 +2,7 @@ import git
 from os import path
 import os
 from tkinter import *
-from tkinter.messagebox import showerror, showinfo, showwarning
+from tkinter.messagebox import showerror, showinfo, showwarning, askyesnocancel
 from tkinter.filedialog import askdirectory
 import re
 
@@ -213,6 +213,12 @@ class App:
                 )
 
     def generate_merge_diff(self):
+        generate_empty_file = askyesnocancel("Empty file generation", "Would you like to generate empty " +
+                                             "files when file is not present at given revision?\n" +
+                                             "This will create matching folder structure for all output folders.")
+        if generate_empty_file == None:
+            return
+        list_of_files = []
         try:
             repo_path = self.text_box_git_repo.get()
             output_root_dir = self.text_box_output_dir.get()
@@ -229,38 +235,34 @@ class App:
             if len(conflicted_files) > 0:
                 os.makedirs(output_root_dir, exist_ok=True)
             for file_path in conflicted_files:
-                try:
-                    # Get the base file version (closest common parent for this file)
-                    base_blob = conflicted_files[file_path][0][1]
-                    final_path = os.path.join(output_root_dir, 'base', os.path.normpath(file_path))
-                    os.makedirs(path.dirname(final_path), exist_ok=True)
-                    base_blob.stream_data(open(final_path, "wb"))
-                except Exception as e:
-                    #print(f"can't locate file {file_path} in base versions")
-                    #log the error
-                    pass
-                
-                try:
-                    # Get the file version from HEAD (your current repository state)
-                    head_blob = conflicted_files[file_path][1][1]
-                    final_path = os.path.join(output_root_dir, 'head', os.path.normpath(file_path))
-                    os.makedirs(path.dirname(final_path), exist_ok=True)
-                    head_blob.stream_data(open(final_path, "wb"))
-                except:
-                    #print(f"can't locate file {file_path} in head versions")
-                    #log the error
-                    pass
-                
-                try:
-                    # Get the file version from MERGE_HEAD (what you are merging)
-                    merge_head_blob = conflicted_files[file_path][2][1]
-                    final_path = os.path.join(output_root_dir, 'merge_head', os.path.normpath(file_path))
-                    os.makedirs(path.dirname(final_path), exist_ok=True)
-                    merge_head_blob.stream_data(open(final_path, "wb"))
-                except:
-                    #print(f"can't locate file {file_path} in merge_head versions")
-                    #log the error
-                    pass
+                # create dictionary where key is number 1-3 where 
+                # 1 == base (common ancestor), 2 == head (current revision), 3 == merge_head (revision for merge)
+                ref_blob_dict = {pair[0]:pair[1] for pair in conflicted_files[file_path]}
+                for key in range(1,4):
+                    if key == 1:
+                        location = "base"
+                    elif key == 2:
+                        location = "head"
+                    elif key == 3:
+                        location = "merge_head"
+                    final_path = os.path.join(output_root_dir, location, os.path.normpath(file_path))
+                    try:
+                        os.makedirs(path.dirname(final_path), exist_ok=True)
+                        blob = ref_blob_dict[key]
+                        blob.stream_data(open(final_path, "wb"))
+                        list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
+                    except:
+                        #log the error if needed (file/blob is not present in revision with current key)
+                        if generate_empty_file:
+                            open(final_path, "wb")
+            with open(os.path.join(output_root_dir, "README.txt"), "wb") as file:
+                list_of_files.sort()
+                list_of_files = [bytes(path + os.linesep, "utf-8") for path in list_of_files]
+                file.writelines(list_of_files)
+            showinfo(
+                title="SUCCESS",
+                message=f"Task finished successfully.",
+            )
 
         except Exception as e:
             if not any(

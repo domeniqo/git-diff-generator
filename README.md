@@ -31,3 +31,9 @@ Simple python app with GUI based on tkinter library that generates folder struct
     - Base - common ancestor, 
     - Head - current version of file, 
     - Merge_head - version of file from reference you are merging
+
+## v2.1
+
+### Added
+- option to generate empty files to match all output folders structure 1:1
+- generate README.txt in root_output_folder with list of files within output structure
