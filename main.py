@@ -234,6 +234,9 @@ class App:
             conflicted_files = repo.index.unmerged_blobs()
             if len(conflicted_files) > 0:
                 os.makedirs(output_root_dir, exist_ok=True)
+            else:
+                showinfo(title="INFO", message="No merge conflicts found in given repository.")
+                return
             for file_path in conflicted_files:
                 # create dictionary where key is number 1-3 where 
                 # 1 == base (common ancestor), 2 == head (current revision), 3 == merge_head (revision for merge)
