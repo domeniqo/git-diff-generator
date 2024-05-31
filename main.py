@@ -277,6 +277,12 @@ class App:
             # select dest/source commits that resulted in merge commit
             dest_commit = original_commit.parents[0]
             source_commit = original_commit.parents[1]
+            
+            # stash changes if working tree is not empty
+            pop_stash = False
+            if repo.is_dirty(untracked_files=True):
+                repo.git.stash("-u")
+                pop_stash=True
             repo.git.checkout(dest_commit)
             try:
                 repo.git.merge(source_commit)
@@ -288,6 +294,8 @@ class App:
                     repo.git.checkout(original_branch, "--force")
                 else:
                     repo.git.checkout(original_commit, "--force")
+                if pop_stash:
+                    repo.git.stash("pop")
                 return
             except git.exc.GitCommandError:
                 conflicting_files=repo.index.unmerged_blobs()
@@ -325,6 +333,8 @@ class App:
                 repo.git.checkout(original_branch, "--force")
             else:
                 repo.git.checkout(original_commit, "--force")
+            if pop_stash:
+                repo.git.stash("pop")
             # locate files in final commit and make a copy to output folder
             for file_path in conflicting_files:
                 location = "final-resolution"
