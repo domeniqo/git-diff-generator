@@ -310,15 +310,16 @@ class App:
                         location = "source"
                     
                     final_path = os.path.join(output_root_dir, location, os.path.normpath(file_path))
-                    list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
                     os.makedirs(path.dirname(final_path), exist_ok=True)
                     try:
                         blob = ref_blob_dict[key]
                         blob.stream_data(open(final_path, "wb"))
+                        list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
                     except:
                         #log the error if needed (file/blob is not present in revision with current key)
                         if generate_empty_file:
                             open(final_path, "wb")
+                            list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
             # checkout back to original state
             if original_branch != None:
                 repo.git.checkout(original_branch, "--force")
@@ -329,13 +330,14 @@ class App:
                 location = "final-resolution"
                 resolved_file_path = os.path.abspath(os.path.join(repo_path, file_path))
                 final_path = os.path.join(output_root_dir, location, os.path.normpath(file_path))
-                list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
                 os.makedirs(path.dirname(final_path), exist_ok=True)
                 if os.path.exists(resolved_file_path):
                     shutil.copy(resolved_file_path, final_path)
+                    list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
                 else:
                     if generate_empty_file:
                         open(final_path, "wb")
+                        list_of_files.append(os.path.join(location, os.path.normpath(file_path)))
             # generate complete list of generated files in output folder
             with open(os.path.join(output_root_dir, "README.txt"), "wb") as file:
                 list_of_files.sort()
