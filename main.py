@@ -10,7 +10,7 @@ from tkinter.ttk import Combobox
 import git
 import git.exc
 
-version="2.2"
+version="3.0"
 
 class App:
     

@@ -44,3 +44,20 @@ Simple python app with GUI based on tkinter library that generates folder struct
 - selection of action by dropdown menu
 - disabling unneeded entries for "generate merge diff" action
 - version number in the ttile window
+
+## v3.0
+
+### Modified
+- processing of merge diff expect repository to be in a state after merge conflict resolution.
+- Current processing steps:
+    - Determine if current HEAD is merge commit, exit if not 
+    - Stash content if working tree is not empty
+    - Checkout to dest commit reference
+    - Merge source commit reference
+    - If no conflicts, return to original state and exit
+    - Take conflicting files from current index
+    - Return repository back to original state
+    - Copy final version of conflicting files into output folder
+
+### Added
+- final-resolution subfolder in output with versions of files after merge conflict resolution
