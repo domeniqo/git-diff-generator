@@ -1,12 +1,13 @@
-import git
 import os
 import re
-
 from os import path
 from tkinter import *
 from tkinter.filedialog import askdirectory
-from tkinter.messagebox import showerror, showinfo, showwarning, askyesnocancel
+from tkinter.messagebox import askyesnocancel, showerror, showinfo, showwarning
 from tkinter.ttk import Combobox
+
+import git
+import git.exc
 
 version="2.2"
 
@@ -259,17 +260,46 @@ class App:
                     message="Provided git repo path is not a valid git repository.",
                 )
                 raise
-            
-            conflicted_files = repo.index.unmerged_blobs()
-            if len(conflicted_files) > 0:
+            original_branch = None
+            original_commit = None
+            conflicting_files = None
+            # remember where the repo was before
+            try:
+                original_branch = repo.active_branch
+                original_commit = repo.active_branch.commit
+            except TypeError:
+                original_commit = repo.head.commit
+            if len(original_commit.parents) != 2:
+                # not a 3 way merge, not supported
+                showinfo(title="INFO", message="Git repository is not switched to reference with merge commit.")
+                return
+            # select dest/source commits that resulted in merge commit
+            dest_commit = original_commit.parents[0]
+            source_commit = original_commit.parents[1]
+            repo.git.checkout(dest_commit)
+            try:
+                repo.git.merge(source_commit)
+                showinfo(title="INFO", message=f"No merge conflict or any problem detected while merging references \n"+
+                         f"SOURCE:{source_commit}\n"+
+                         f"TARGET:{dest_commit}")
+                # checkout back to original state
+                if original_branch != None:
+                    repo.git.checkout(original_branch, "--force")
+                else:
+                    repo.git.checkout(original_commit, "--force")
+                return
+            except git.exc.GitCommandError:
+                conflicting_files=repo.index.unmerged_blobs()
+                
+            if conflicting_files != None and len(conflicting_files) > 0:
                 os.makedirs(output_root_dir, exist_ok=True)
             else:
                 showinfo(title="INFO", message="No merge conflicts found in given repository.")
                 return
-            for file_path in conflicted_files:
+            for file_path in conflicting_files:
                 # create dictionary where key is number 1-3 where 
                 # 1 == base (common ancestor), 2 == head (current revision), 3 == merge_head (revision for merge)
-                ref_blob_dict = {pair[0]:pair[1] for pair in conflicted_files[file_path]}
+                ref_blob_dict = {pair[0]:pair[1] for pair in conflicting_files[file_path]}
                 for key in range(1,4):
                     if key == 1:
                         location = "base"
@@ -287,6 +317,10 @@ class App:
                         #log the error if needed (file/blob is not present in revision with current key)
                         if generate_empty_file:
                             open(final_path, "wb")
+            if original_branch != None:
+                repo.git.checkout(original_branch, "--force")
+            else:
+                repo.git.checkout(original_commit, "--force")
             with open(os.path.join(output_root_dir, "README.txt"), "wb") as file:
                 list_of_files.sort()
                 list_of_files = [bytes(path + os.linesep, "utf-8") for path in list_of_files]
